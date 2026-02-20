@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>OpenRGBZoneResizeDialog</class>
- <widget class="QDialog" name="OpenRGBZoneResizeDialog">
+ <class>OpenRGBZoneEditorDialog</class>
+ <widget class="QDialog" name="OpenRGBZoneEditorDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -27,6 +27,13 @@
       <widget class="QPushButton" name="RemoveSegmentButton">
        <property name="text">
         <string>Remove Segment</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="ImportConfigurationButton">
+       <property name="text">
+        <string>Import Configuration</string>
        </property>
       </widget>
      </item>
@@ -112,7 +119,7 @@
   <connection>
    <sender>ButtonBox</sender>
    <signal>accepted()</signal>
-   <receiver>OpenRGBZoneResizeDialog</receiver>
+   <receiver>OpenRGBZoneEditorDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -128,7 +135,7 @@
   <connection>
    <sender>ButtonBox</sender>
    <signal>rejected()</signal>
-   <receiver>OpenRGBZoneResizeDialog</receiver>
+   <receiver>OpenRGBZoneEditorDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

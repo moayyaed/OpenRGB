@@ -1,20 +1,22 @@
 /*---------------------------------------------------------*\
-| OpenRGBZoneResizeDialog.cpp                               |
+| OpenRGBZoneEditorDialog.cpp                               |
 |                                                           |
-|   User interface for resizing zones                       |
+|   User interface for editing zones                        |
 |                                                           |
 |   This file is part of the OpenRGB project                |
 |   SPDX-License-Identifier: GPL-2.0-or-later               |
 \*---------------------------------------------------------*/
 
+#include <fstream>
 #include <QComboBox>
+#include <QFileDialog>
 #include <QLineEdit>
-#include "OpenRGBZoneResizeDialog.h"
-#include "ui_OpenRGBZoneResizeDialog.h"
+#include "OpenRGBZoneEditorDialog.h"
+#include "ui_OpenRGBZoneEditorDialog.h"
 
-OpenRGBZoneResizeDialog::OpenRGBZoneResizeDialog(RGBController* edit_dev_ptr, unsigned int edit_zone_idx_val, QWidget *parent) :
+OpenRGBZoneEditorDialog::OpenRGBZoneEditorDialog(RGBController* edit_dev_ptr, unsigned int edit_zone_idx_val, QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::OpenRGBZoneResizeDialog)
+    ui(new Ui::OpenRGBZoneEditorDialog)
 {
     edit_dev      = edit_dev_ptr;
     edit_zone_idx = edit_zone_idx_val;
@@ -42,12 +44,12 @@ OpenRGBZoneResizeDialog::OpenRGBZoneResizeDialog(RGBController* edit_dev_ptr, un
     }
 }
 
-OpenRGBZoneResizeDialog::~OpenRGBZoneResizeDialog()
+OpenRGBZoneEditorDialog::~OpenRGBZoneEditorDialog()
 {
     delete ui;
 }
 
-void OpenRGBZoneResizeDialog::changeEvent(QEvent *event)
+void OpenRGBZoneEditorDialog::changeEvent(QEvent *event)
 {
     if(event->type() == QEvent::LanguageChange)
     {
@@ -55,7 +57,7 @@ void OpenRGBZoneResizeDialog::changeEvent(QEvent *event)
     }
 }
 
-void OpenRGBZoneResizeDialog::on_ResizeSlider_valueChanged(int value)
+void OpenRGBZoneEditorDialog::on_ResizeSlider_valueChanged(int value)
 {
     ui->ResizeBox->blockSignals(true);
     ui->ResizeBox->setValue(value);
@@ -73,7 +75,7 @@ void OpenRGBZoneResizeDialog::on_ResizeSlider_valueChanged(int value)
     CheckSegmentsValidity();
 }
 
-void OpenRGBZoneResizeDialog::on_segment_lineedit_textChanged()
+void OpenRGBZoneEditorDialog::on_segment_lineedit_textChanged()
 {
     /*-----------------------------------------------------*\
     | Update the Slider with the LineEdit value for each    |
@@ -88,7 +90,7 @@ void OpenRGBZoneResizeDialog::on_segment_lineedit_textChanged()
     CheckSegmentsValidity();
 }
 
-void OpenRGBZoneResizeDialog::on_segment_slider_valueChanged(int)
+void OpenRGBZoneEditorDialog::on_segment_slider_valueChanged(int)
 {
     /*-----------------------------------------------------*\
     | Update the LineEdit with the Slider value for each    |
@@ -103,7 +105,7 @@ void OpenRGBZoneResizeDialog::on_segment_slider_valueChanged(int)
     CheckSegmentsValidity();
 }
 
-void OpenRGBZoneResizeDialog::on_ResizeBox_valueChanged(int value)
+void OpenRGBZoneEditorDialog::on_ResizeBox_valueChanged(int value)
 {
     ui->ResizeSlider->blockSignals(true);
     ui->ResizeSlider->setValue(value);
@@ -121,7 +123,7 @@ void OpenRGBZoneResizeDialog::on_ResizeBox_valueChanged(int value)
     CheckSegmentsValidity();
 }
 
-int OpenRGBZoneResizeDialog::show()
+int OpenRGBZoneEditorDialog::show()
 {
     int ret_val = 0;
 
@@ -161,7 +163,7 @@ int OpenRGBZoneResizeDialog::show()
     return(ret_val);
 }
 
-void OpenRGBZoneResizeDialog::AddSegmentRow(QString name, unsigned int length, zone_type type)
+void OpenRGBZoneEditorDialog::AddSegmentRow(QString name, unsigned int length, zone_type type)
 {
     /*---------------------------------------------------------*\
     | Create new line in segments list tree                     |
@@ -186,7 +188,11 @@ void OpenRGBZoneResizeDialog::AddSegmentRow(QString name, unsigned int length, z
     \*---------------------------------------------------------*/
     combobox_type->addItem("Single");
     combobox_type->addItem("Linear");
-    //combobox_type->addItem("Matrix");
+    combobox_type->addItem("Matrix");
+    combobox_type->addItem("Linear Loop");
+    combobox_type->addItem("Matrix Loop X");
+    combobox_type->addItem("Matrix Loop Y");
+    combobox_type->addItem("Segmented");
 
     combobox_type->setCurrentIndex(type);
 
@@ -212,12 +218,12 @@ void OpenRGBZoneResizeDialog::AddSegmentRow(QString name, unsigned int length, z
     /*---------------------------------------------------------*\
     | Connect signals for handling slider and line edits        |
     \*---------------------------------------------------------*/
-    connect(lineedit_name, &QLineEdit::textChanged, this, &OpenRGBZoneResizeDialog::on_segment_lineedit_textChanged);
-    connect(slider_length, &QSlider::valueChanged, this, &OpenRGBZoneResizeDialog::on_segment_slider_valueChanged);
-    connect(lineedit_length, &QLineEdit::textChanged, this, &OpenRGBZoneResizeDialog::on_segment_lineedit_textChanged);
+    connect(lineedit_name, &QLineEdit::textChanged, this, &OpenRGBZoneEditorDialog::on_segment_lineedit_textChanged);
+    connect(slider_length, &QSlider::valueChanged, this, &OpenRGBZoneEditorDialog::on_segment_slider_valueChanged);
+    connect(lineedit_length, &QLineEdit::textChanged, this, &OpenRGBZoneEditorDialog::on_segment_lineedit_textChanged);
 }
 
-void OpenRGBZoneResizeDialog::on_AddSegmentButton_clicked()
+void OpenRGBZoneEditorDialog::on_AddSegmentButton_clicked()
 {
     /*---------------------------------------------------------*\
     | Create new empty row with name "Segment X"                |
@@ -229,7 +235,7 @@ void OpenRGBZoneResizeDialog::on_AddSegmentButton_clicked()
     CheckSegmentsValidity();
 }
 
-void OpenRGBZoneResizeDialog::CheckSegmentsValidity()
+void OpenRGBZoneEditorDialog::CheckSegmentsValidity()
 {
     bool segments_valid = true;
 
@@ -275,9 +281,70 @@ void OpenRGBZoneResizeDialog::CheckSegmentsValidity()
     ui->ButtonBox->setEnabled(segments_valid);
 }
 
-void OpenRGBZoneResizeDialog::on_RemoveSegmentButton_clicked()
+void OpenRGBZoneEditorDialog::on_RemoveSegmentButton_clicked()
 {
     ui->SegmentsTreeWidget->takeTopLevelItem(ui->SegmentsTreeWidget->topLevelItemCount() - 1);
 
     CheckSegmentsValidity();
+}
+
+void OpenRGBZoneEditorDialog::on_ImportConfigurationButton_clicked()
+{
+    QFileDialog file_dialog(this);
+
+    file_dialog.setFileMode(QFileDialog::ExistingFile);
+    file_dialog.setNameFilter("*.json");
+    file_dialog.setWindowTitle("Import Configuration");
+
+    if(file_dialog.exec())
+    {
+        QString         filename        = file_dialog.selectedFiles()[0];
+        std::ifstream   config_file(filename.toStdString(), std::ios::in);
+        nlohmann::json  config_json;
+
+        if(config_file)
+        {
+            try
+            {
+                config_file >> config_json;
+
+                if(config_json.contains("segments"))
+                {
+                    unsigned int total_leds_count = ui->ResizeSlider->value();
+
+                    for(std::size_t segment_idx = 0; segment_idx < config_json["segments"].size(); segment_idx++)
+                    {
+                        unsigned int    segment_leds_count  = 0;
+                        matrix_map_type segment_matrix_map;
+                        QString         segment_name        = "";
+                        zone_type       segment_type        = ZONE_TYPE_LINEAR;
+
+                        if(config_json["segments"][segment_idx].contains("name"))
+                        {
+                            segment_name = QString::fromStdString(config_json["segments"][segment_idx]["name"]);
+                        }
+                        if(config_json["segments"][segment_idx].contains("leds_count"))
+                        {
+                            segment_leds_count = config_json["segments"][segment_idx]["leds_count"];
+                        }
+                        if(config_json["segments"][segment_idx].contains("type"))
+                        {
+                            segment_type = config_json["segments"][segment_idx]["type"];
+                        }
+
+                        AddSegmentRow(segment_name, segment_leds_count, segment_type);
+
+                        total_leds_count += segment_leds_count;
+                    }
+
+
+                    ui->ResizeSlider->setValue(total_leds_count);
+                    ui->ResizeBox->setValue(total_leds_count);
+                }
+            }
+            catch(const std::exception& e)
+            {
+            }
+        }
+    }
 }
